@@ -1,0 +1,56 @@
+if (NOT VCPKG_CONFIGURED)
+    set(VCPKG_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/vcpkg")
+
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external")
+        file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/external")
+    endif ()
+
+    if (NOT EXISTS "${VCPKG_ROOT}")
+        message(STATUS "${VCPKG_ROOT} cannot find vcpkg directory. Executing git clone, please wait...")
+        execute_process(COMMAND "git" "clone" "https://github.com/microsoft/vcpkg" "vcpkg" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/external")
+    endif()
+
+
+    if(WIN32)
+        set(VCPKG_TARGET_TRIPLET "x64-windows-static")
+        set(VCPKG_BINARY "${VCPKG_ROOT}/vcpkg.exe")
+    elseif(UNIX)
+        set(VCPKG_TARGET_TRIPLET "x64-linux")
+        set(VCPKG_BINARY "${VCPKG_ROOT}/vcpkg")
+    endif()
+
+    set(VCPKG_CONFIGURED TRUE)
+
+    if(NOT EXISTS "${VCPKG_BINARY}")
+        message(STATUS "${VCPKG_BINARY} not found, bootstrapping vcpkg, please wait...")
+        if (WIN32)
+            execute_process(COMMAND "powershell" "${VCPKG_ROOT}/bootstrap-vcpkg.bat")
+        elseif(UNIX)
+            execute_process(COMMAND "sh" "${VCPKG_ROOT}/bootstrap-vcpkg.sh")
+        endif()
+    endif()
+    message(STATUS "VCPKG configured with no errors")
+endif()
+
+function(vcpkg_install PackageName)
+    message(STATUS "Wait installing ${PackageName}")
+    execute_process(COMMAND "${VCPKG_BINARY}" "install" "${PackageName}:${VCPKG_TARGET_TRIPLET}" "--clean-after-build" RESULT_VARIABLE INSTALL_RES WORKING_DIRECTORY ${VCPKG_ROOT})
+
+    if (INSTALL_RES EQUAL 0)
+        message(STATUS "Installed ${PackageName}")
+    else ()
+        message(FATAL_ERROR "Failed to install ${PackageName}, ${INSTALL_RES}")
+    endif ()
+endfunction()
+
+function(vcpkg_install_not_found vcpkg_name)
+    if(NOT EXISTS "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/${vcpkg_name}")
+        vcpkg_install(${vcpkg_name})
+    else ()
+        message(STATUS "Library \"${vcpkg_name}\" is already installed")
+    endif()
+endfunction()
+
+function(vcpkg_add_toolchain)
+    set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+endfunction()
