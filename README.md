@@ -29,16 +29,13 @@ This repository contains a CMake script that automates the process of downloadin
    cmake_minimum_required(VERSION 3.12)
    project(YourProjectName)
 
-   # Define the path to the vcpkg.cmake script
-   set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/vcpkg.cmake")
-
    # Include the vcpkg script
    include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/vcpkg.cmake")
 
    # Specify the libraries to be installed via vcpkg
    
-   vcpkg_install_not_found(fmt)
-   vcpkg_install_not_found(boost)
+   vcpkg_install_if_not_found(fmt)
+   vcpkg_install_if_not_found(boost)
    
    find_package(fmt REQUIRED)
    find_package(boost REQUIRED)
